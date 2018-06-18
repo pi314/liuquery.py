@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+import sys
+import requests
+import bs4
+
+
+URL = 'http://boshiamy.com/liuquery.php'
+
+
+def get_soup(q):
+    res = requests.get(URL)
+    if res.status_code != 200:
+        return None
+
+    soup = bs4.BeautifulSoup(res.content, 'html.parser')
+    token = soup.select('input[type=hidden]')[0].attrs['value']
+    cookie = res.cookies['PHPSESSID']
+
+    res = requests.post(
+            URL,
+            data={'q': q, 'f': 1, 'token': token},
+            cookies={'PHPSESSID': cookie},
+    )
+    if res.status_code != 200:
+        return None
+
+    soup = bs4.BeautifulSoup(res.content, 'html.parser')
+    return soup
+
+
+def parse_result(soup):
+    ret = {}
+    rlist = soup.select('div.container table > tbody > tr')
+    for row in rlist:
+        tlist = row.select('td')
+        td0 = tlist[0]
+        td1 = tlist[1]
+
+        key = td0.text
+        ret[key] = []
+        for li in td1.select('ul > li'):
+            slist = li.select('span')
+            if slist:
+                for span in slist:
+                    if '建議碼' not in span.text:
+                        ret[key].append(span.text)
+            else:
+                ret[key].append(li.text)
+
+    return ret
+
+
+def main():
+    if len(sys.argv) != 2:
+        print('Usage: {} character'.format(sys.argv[0]))
+        exit(1)
+
+    q = ''.join(sys.argv[1:])
+    soup = get_soup(q)
+    if not soup:
+        print('Cannot query to {URL}'.format(URL=URL))
+        return
+
+    res = parse_result(soup)
+    if not res or not len(res):
+        print('Cannot extract result')
+        return
+
+    for i, char in enumerate(q):
+        if char not in res:
+            print(char)
+        else:
+            l = len(res[char])
+            for j, choice in enumerate(res[char]):
+                if j == 0:
+                    print('{char} {choice}'.format(char=char, choice=choice))
+                else:
+                    print('   {choice}'.format(choice=choice))
+
+        if i != len(q) - 1:
+            print()
+
+
+main()
