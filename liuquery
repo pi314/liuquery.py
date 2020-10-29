@@ -8,20 +8,22 @@ URL = 'http://boshiamy.com/liuquery.php'
 
 
 def get_soup(q):
-    res = requests.get(URL)
-    if res.status_code != 200:
-        return None
-
-    soup = bs4.BeautifulSoup(res.content, 'html.parser')
-    token = soup.select('input[type=hidden]')[0].attrs['value']
-    cookie = res.cookies['PHPSESSID']
+    # res = requests.get(URL)
+    # if res.status_code != 200:
+    #     print('status_code = {}'.res.status_code)
+    #     return None
+    #
+    # soup = bs4.BeautifulSoup(res.content, 'html.parser')
+    # # token = soup.select('input[type=hidden]')[0].attrs['value']
+    # cookie = res.cookies['PHPSESSID']
 
     res = requests.post(
-            URL,
-            data={'q': q, 'f': 1, 'token': token},
-            cookies={'PHPSESSID': cookie},
+            URL + '?q={}&f=1'.format(q),
+            # data={'q': q, 'f': 1, 'token': token},
+            # cookies={'PHPSESSID': cookie},
     )
     if res.status_code != 200:
+        print('status_code = {}'.res.status_code)
         return None
 
     soup = bs4.BeautifulSoup(res.content, 'html.parser')
